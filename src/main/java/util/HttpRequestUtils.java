@@ -3,107 +3,120 @@ package util;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
 public class HttpRequestUtils {
-    /**
-     * @param queryString은
-     *            URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
-     * @return
-     */
-    public static Map<String, String> parseQueryString(String queryString) {
-        return parseValues(queryString, "&");
-    }
+	/**
+	 * @param url에서 웹페이지 주소 받아오기
+	 * @return
+	 */
+	public static String getPageAddress(String line) {
+		String[] firstLineArr = line.split(" ");
+		return firstLineArr[1];
+	}
 
-    /**
-     * @param 쿠키
-     *            값은 name1=value1; name2=value2 형식임
-     * @return
-     */
-    public static Map<String, String> parseCookies(String cookies) {
-        return parseValues(cookies, ";");
-    }
+	/**
+	 * @param GET방식 url에서 파라미터 구분하기
+	 * @return
+	 */
+	public static Map<String, String> getParams(String url) {
+		int index = url.indexOf("?");
+		String params = url.substring(index + 1);
+		return parseQueryString(params);
+	}
 
-    private static Map<String, String> parseValues(String values, String separator) {
-        if (Strings.isNullOrEmpty(values)) {
-            return Maps.newHashMap();
-        }
+	/**
+	 * @param queryString은 URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
+	 * @return
+	 */
+	public static Map<String, String> parseQueryString(String queryString) {
+		return parseValues(queryString, "&");
+	}
 
-        String[] tokens = values.split(separator);
-        return Arrays.stream(tokens).map(t -> getKeyValue(t, "=")).filter(p -> p != null)
-                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-    }
+	/**
+	 * @param 쿠키 값은 name1=value1; name2=value2 형식임
+	 * @return
+	 */
+	public static Map<String, String> parseCookies(String cookies) {
+		return parseValues(cookies, ";");
+	}
 
-    static Pair getKeyValue(String keyValue, String regex) {
-        if (Strings.isNullOrEmpty(keyValue)) {
-            return null;
-        }
+	private static Map<String, String> parseValues(String values, String separator) {
+		if (Strings.isNullOrEmpty(values)) {
+			return Maps.newHashMap();
+		}
+		String[] tokens = values.split(separator);
+		return Arrays.stream(tokens).map(t -> getKeyValue(t, "=")).filter(p -> p != null)
+				.collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+	}
 
-        String[] tokens = keyValue.split(regex);
-        if (tokens.length != 2) {
-            return null;
-        }
+	static Pair getKeyValue(String keyValue, String regex) {
+		if (Strings.isNullOrEmpty(keyValue)) {
+			return null;
+		}
+		String[] tokens = keyValue.split(regex);
+		if (tokens.length != 2) {
+			return null;
+		}
+		return new Pair(tokens[0], tokens[1]);
+	}
 
-        return new Pair(tokens[0], tokens[1]);
-    }
+	public static Pair parseHeader(String header) {
+		return getKeyValue(header, ": ");
+	}
 
-    public static Pair parseHeader(String header) {
-        return getKeyValue(header, ": ");
-    }
+	public static class Pair {
+		String key;
+		String value;
 
-    public static class Pair {
-        String key;
-        String value;
+		Pair(String key, String value) {
+			this.key = key.trim();
+			this.value = value.trim();
+		}
 
-        Pair(String key, String value) {
-            this.key = key.trim();
-            this.value = value.trim();
-        }
+		public String getKey() {
+			return key;
+		}
 
-        public String getKey() {
-            return key;
-        }
+		public String getValue() {
+			return value;
+		}
 
-        public String getValue() {
-            return value;
-        }
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((key == null) ? 0 : key.hashCode());
+			result = prime * result + ((value == null) ? 0 : value.hashCode());
+			return result;
+		}
 
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((key == null) ? 0 : key.hashCode());
-            result = prime * result + ((value == null) ? 0 : value.hashCode());
-            return result;
-        }
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Pair other = (Pair) obj;
+			if (key == null) {
+				if (other.key != null)
+					return false;
+			} else if (!key.equals(other.key))
+				return false;
+			if (value == null) {
+				if (other.value != null)
+					return false;
+			} else if (!value.equals(other.value))
+				return false;
+			return true;
+		}
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Pair other = (Pair) obj;
-            if (key == null) {
-                if (other.key != null)
-                    return false;
-            } else if (!key.equals(other.key))
-                return false;
-            if (value == null) {
-                if (other.value != null)
-                    return false;
-            } else if (!value.equals(other.value))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "Pair [key=" + key + ", value=" + value + "]";
-        }
-    }
+		@Override
+		public String toString() {
+			return "Pair [key=" + key + ", value=" + value + "]";
+		}
+	}
 }
