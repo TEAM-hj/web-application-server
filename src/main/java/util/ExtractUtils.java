@@ -1,6 +1,16 @@
 package util;
 
 public class ExtractUtils {
+	public static String extractMethod(String httpHeaderLine) throws Exception {
+		String[] tokens = httpHeaderLine.split(" ");
+		
+		if(tokens.length == 3) {
+			return tokens[0];
+		}else {
+			throw new Exception("method 추출 가능 라인이 아닙니다.");
+		}
+	}
+	
 	public static String extractUrl(String httpHeaderLine) throws Exception {
 		String[] tokens = httpHeaderLine.split(" ");
 		
