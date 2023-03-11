@@ -1,18 +1,11 @@
 package webserver;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.net.Socket;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,15 +15,17 @@ import org.slf4j.LoggerFactory;
 import db.DataBase;
 import model.User;
 import util.HttpRequestUtils;
-import util.IOUtils;
 
 public class RequestHandler extends Thread {
 	private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
 	private Socket connection;
-	private static boolean logined = false;
+	Map<String, Controller> controllers = new HashMap<>();
 
 	public RequestHandler(Socket connectionSocket) {
 		this.connection = connectionSocket;
+		controllers.put("/user/create", new CreateUserController());
+		controllers.put("/user/login", new LoginController());
+		controllers.put("/user/list", new ListUserController());
 	}
 
 	public void run() {
@@ -47,51 +42,21 @@ public class RequestHandler extends Thread {
 			}
 			
 			if (url.contains("/user/create")) {
-				User user = new User(request.getParameter("userId"), 
-									 request.getParameter("password"), 
-									 URLDecoder.decode(request.getParameter("name"), "UTF-8"),
-									 URLDecoder.decode(request.getParameter("email"), "UTF-8"));
-				DataBase.addUser(user);
-				log.debug("user: {}", user.toString());
-				response.sendRedirect("/index.html");
+				controllers.get("/user/create").service(request, response);
 				return;
 			}
 			
 			if (("/user/login").equals(url)) {
-				User loginUser = new User(request.getParameter("userId"), 
-						 				  request.getParameter("password"), "", "");
-				User dbUser = DataBase.findUserById(loginUser.getUserId());
-				
-				if (dbUser!=null && dbUser.getPassword().equals(loginUser.getPassword())) {
-					log.debug("login 성공");
-					response.addHeader("Set-Cookie", "logined=true");
-					response.sendRedirect("/index.html");
-					return;
-				} else {
-					logined = false;
-					response.forward("./webapp/user/login_failed.html");
-				}
+				controllers.get("/user/login").service(request, response);
+				return;
 			}
 			
 			if (("/user/list").equals(url)) {
-				Map<String, String> cookieMap = null;
-				cookieMap = HttpRequestUtils.parseCookies(request.getHeader("Cookie"));
-				
-				if (Boolean.parseBoolean(cookieMap.get("logined"))) {
-					StringBuilder sb = new StringBuilder();
-					ArrayList<User> users = new ArrayList(DataBase.findAll());
-					for (User user : users) {
-						sb.append("<li>사용자 이름: ").append(user.getName()).append("</li>");
-					}
-					response.forwardBody(sb.toString());
-				} else {
-					response.addHeader("Set-Cookie", "logined=false");
-					response.sendRedirect("/user/login.html");
-					return;
-				}
+				controllers.get("/user/list").service(request, response);
+				return;
 			}
 			
-		} catch (IOException e) {
+		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
 	}
